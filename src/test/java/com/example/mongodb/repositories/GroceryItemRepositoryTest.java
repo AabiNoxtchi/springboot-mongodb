@@ -5,18 +5,34 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Testcontainers
 @SpringBootTest
-@TestPropertySource(locations = "classpath:application-test.properties")
 public class GroceryItemRepositoryTest {
+
+
+    @Container
+    static MongoDBAtlasLocalContainer atlasContainer = new MongoDBAtlasLocalContainer(
+            "mongodb/mongodb-atlas-local:7.0.9"
+    );
+
+    @DynamicPropertySource
+    static void mongoDBAtlasLocalProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.data.mongodb.uri", atlasContainer::getConnectionString);
+    }
 
     @Autowired
     GroceryItemRepository groceryItemRepo;
+
     private final GroceryItem item1 =
             new GroceryItem("Whole Wheat Biscuit", "Whole Wheat Biscuit", 5, "snacks");
     private final GroceryItem item2 =
@@ -35,7 +51,7 @@ public class GroceryItemRepositoryTest {
 
     @Test
     public void saveItems_ShouldPass() {
-        // create and test
+        // test
         groceryItemRepo.save(item1);
         groceryItemRepo.save(item2);
         groceryItemRepo.save(item3);
@@ -108,7 +124,7 @@ public class GroceryItemRepositoryTest {
 
         // test
         // fetching only name and quantity
-        List<GroceryItem> itemList = groceryItemRepo.findAll("snacks");
+        List<GroceryItem> itemList = groceryItemRepo.findAllNameAndQuantity("snacks");
 
         // assert
         assertEquals(2, itemList.size());
